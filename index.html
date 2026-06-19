@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MINDLOCK - Assistente de Dedução</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MINDLOCK">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117; color: #c9d1d9;
+            min-height: 100vh; padding: 8px; font-size: 14px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: #238636; font-size: 1.5rem; margin-bottom: 2px; }
+        .subtitle { text-align: center; color: #8b949e; font-size: 0.8rem; margin-bottom: 12px; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; }
+        .tab-btn {
+            flex: 1; min-width: 70px; padding: 10px 6px;
+            border: none; background: #161b22; color: #8b949e;
+            cursor: pointer; border-radius: 8px 8px 0 0;
+            font-size: 0.75rem; font-weight: 600;
+            border-bottom: 3px solid transparent; white-space: nowrap;
+        }
+        .tab-btn.active { background: #21262d; color: #fff; border-bottom-color: #238636; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card {
+            background: #161b22; border-radius: 12px; padding: 14px;
+            margin-bottom: 10px; border: 1px solid #30363d;
+        }
+        .card-title {
+            font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: #238636;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .hint {
+            font-size: 0.78rem; color: #8b949e; margin-bottom: 10px;
+            padding: 8px 10px; background: rgba(88,166,255,0.08);
+            border-radius: 6px; border-left: 3px solid #58a6ff; line-height: 1.4;
+        }
+        .setup-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .setup-item {
+            background: #21262d; padding: 10px; border-radius: 8px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .setup-item:hover { border-color: #30363d; }
+        .setup-item input { width: 18px; height: 18px; accent-color: #238636; }
+        .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); flex-shrink: 0; }
+        .setup-item label { font-size: 0.85rem; cursor: pointer; flex: 1; }
+        .setup-item.selected { border-color: #238636; background: rgba(35,134,54,0.1); }
+        .setup-item.disabled { 
+            opacity: 0.25; 
+            pointer-events: none; 
+            filter: grayscale(0.8);
+        }
+        .setup-item.disabled input { 
+            cursor: not-allowed; 
+        }
+        .setup-item.disabled label { 
+            cursor: not-allowed; 
+            text-decoration: line-through;
+        }
+        .contador-box {
+            text-align: center; padding: 12px; background: #0d1117;
+            border-radius: 8px; margin: 10px 0;
+        }
+        .contador-jogadores { font-size: 1.1rem; font-weight: 700; color: #238636; }
+        .contador-cartas { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
+        .btn-iniciar {
+            background: #238636; color: #fff; border: none;
+            padding: 16px; border-radius: 10px; font-weight: 700;
+            font-size: 1rem; cursor: pointer; width: 100%; margin-top: 12px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-iniciar:hover { opacity: 0.9; }
+        .btn-iniciar:active { transform: scale(0.98); }
+        .btn-iniciar:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+        select {
+            width: 100%; padding: 10px 8px; border: 1px solid #30363d;
+            background: #0d1117; color: #c9d1d9; font-size: 0.85rem;
+            border-radius: 6px; outline: none; cursor: pointer;
+        }
+        select:focus { border-color: #238636; }
+        optgroup { font-weight: 700; color: #238636; background: #161b22; }
+        optgroup option { font-weight: 400; color: #c9d1d9; background: #0d1117; }
+        .cartas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .cartas-grid.many { grid-template-columns: repeat(3, 1fr); }
+        .palpite-form {
+            background: #0d1117; border-radius: 10px; padding: 12px;
+            border: 1px solid #30363d;
+        }
+        .palpite-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;
+        }
+        .palpite-grid label {
+            font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; display: block;
+        }
+        .mostrou-section {
+            background: #21262d; border-radius: 8px; padding: 12px; margin-bottom: 12px;
+        }
+        .mostrou-label {
+            font-size: 0.8rem; font-weight: 600; color: #c9d1d9;
+            margin-bottom: 10px; text-align: center;
+        }
+        .badges-row {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+        }
+        .jogador-badge {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700; transition: all 0.2s;
+            position: relative;
+        }
+        .jogador-badge:hover { transform: scale(1.15); }
+        .jogador-badge.selected {
+            box-shadow: 0 0 0 3px #238636, 0 0 15px rgba(35,134,54,0.4);
+            border-color: #fff;
+        }
+        .jogador-badge .badge-name {
+            position: absolute; bottom: -18px; font-size: 0.6rem;
+            color: #8b949e; white-space: nowrap;
+        }
+        .btn-passou {
+            background: #30363d !important; color: #8b949e !important;
+            font-size: 1.2rem !important;
+        }
+        .btn-passou.selected { box-shadow: 0 0 0 3px #238636 !important; }
+        .btn-add {
+            background: #238636; color: #fff; border: none;
+            padding: 12px; border-radius: 8px; font-weight: 700;
+            cursor: pointer; width: 100%; font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-add:hover { background: #2ea043; }
+        .btn-add:active { transform: scale(0.98); }
+        .historico-item {
+            background: #0d1117; padding: 12px; border-radius: 8px;
+            margin-bottom: 8px; border-left: 3px solid;
+            transition: all 0.2s;
+        }
+        .historico-item:hover { background: #161b22; }
+        .historico-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+        }
+        .historico-num { font-size: 0.75rem; color: #8b949e; font-weight: 700; }
+        .historico-mostrou {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+            font-weight: 600;
+        }
+        .historico-mostrou.passou { color: #8b949e; background: #21262d; }
+        .historico-body { font-size: 0.85rem; line-height: 1.5; }
+        .historico-body strong { color: #238636; }
+        .historico-cartas { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .carta-tag {
+            font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;
+            background: #21262d; border: 1px solid #30363d;
+        }
+        .carta-tag.local { border-color: #58a6ff; color: #58a6ff; }
+        .carta-tag.suspeito { border-color: #a371f7; color: #a371f7; }
+        .carta-tag.arma { border-color: #f0883e; color: #f0883e; }
+
+        /* Cartas com dono conhecido no histórico */
+        .carta-tag.tem-dono {
+            font-weight: 600;
+            border-width: 2px;
+        }
+        .carta-tag.no-envelope {
+            border-color: #484f58 !important;
+            color: #484f58 !important;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        .carta-tag.dono-amarelo { border-color: #FFD700 !important; color: #FFD700 !important; background: rgba(255,215,0,0.1); }
+        .carta-tag.dono-azul { border-color: #0066CC !important; color: #58a6ff !important; background: rgba(0,102,204,0.1); }
+        .carta-tag.dono-branco { border-color: #E8E8E8 !important; color: #E8E8E8 !important; background: rgba(232,232,232,0.1); }
+        .carta-tag.dono-marrom { border-color: #8B4513 !important; color: #d2691e !important; background: rgba(139,69,19,0.1); }
+        .carta-tag.dono-preto { border-color: #666 !important; color: #888 !important; background: rgba(100,100,100,0.1); }
+        .carta-tag.dono-rosa { border-color: #FF1493 !important; color: #ff69b4 !important; background: rgba(255,20,147,0.1); }
+        .carta-tag.dono-verde { border-color: #228B22 !important; color: #3fb950 !important; background: rgba(34,139,34,0.1); }
+        .carta-tag.dono-vermelho { border-color: #DC143C !important; color: #ff6b6b !important; background: rgba(220,20,60,0.1); }
+
+        .carta-tag .dono-label {
+            font-size: 0.6rem;
+            margin-left: 4px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .poss-table-wrapper { overflow-x: auto; }
+        .poss-table {
+            width: 100%; border-collapse: collapse; font-size: 0.8rem;
+        }
+        .poss-table th {
+            background: #21262d; padding: 10px 6px; text-align: center;
+            font-weight: 700; border: 1px solid #30363d; position: sticky; top: 0;
+        }
+        .poss-table th:first-child { text-align: left; padding-left: 10px; }
+        .poss-table td {
+            padding: 8px 4px; border: 1px solid #30363d;
+            text-align: center; cursor: pointer; transition: all 0.15s;
+            min-width: 50px; height: 38px; font-weight: 500;
+        }
+        .poss-table td:first-child {
+            text-align: left; padding-left: 10px; background: #21262d;
+            font-weight: 600; cursor: default; min-width: 120px;
+        }
+        .poss-table td:hover:not(:first-child) { filter: brightness(1.3); }
+        .cell-unknown { background: transparent; color: #8b949e; }
+        .cell-no {
+            background: #21262d !important; color: #484f58;
+            text-decoration: line-through; font-size: 0.7rem;
+        }
+        .cell-possible { background: rgba(35,134,54,0.15) !important; color: #238636; }
+        .cell-confirmed {
+            font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .cell-envelope {
+            background: linear-gradient(135deg, #ffd700, #ffaa00) !important;
+            color: #000 !important; font-weight: 800;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(255,215,0,0); }
+        }
+        .jogador-amarelo { background: #FFD700 !important; color: #000 !important; }
+        .jogador-azul { background: #0066CC !important; color: #fff !important; }
+        .jogador-branco { background: #E8E8E8 !important; color: #000 !important; }
+        .jogador-marrom { background: #8B4513 !important; color: #fff !important; }
+        .jogador-preto { background: #2D2D2D !important; color: #fff !important; }
+        .jogador-rosa { background: #FF1493 !important; color: #fff !important; }
+        .jogador-verde { background: #228B22 !important; color: #fff !important; }
+        .jogador-vermelho { background: #DC143C !important; color: #fff !important; }
+        .section-header {
+            background: #0d1117; padding: 6px 10px; font-size: 0.75rem;
+            font-weight: 700; color: #8b949e; text-transform: uppercase;
+            letter-spacing: 0.5px; border-bottom: 1px solid #30363d;
+        }
+        .deduction-box {
+            background: rgba(35,134,54,0.15); border: 1px solid #238636;
+            border-radius: 10px; padding: 12px; margin-bottom: 12px;
+            font-size: 0.85rem; display: none; align-items: flex-start; gap: 10px;
+            animation: slideDown 0.3s ease;
+        }
+        .deduction-box.active { display: flex; }
+        .deduction-box .icon { font-size: 1.3rem; flex-shrink: 0; }
+        .deduction-box .text { line-height: 1.5; }
+        .deduction-box .text strong { color: #3fb950; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .jogadores-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .jogador-bloco {
+            background: #0d1117; border-radius: 10px; overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        .jogador-header {
+            padding: 10px; text-align: center; font-weight: 700;
+            font-size: 0.9rem; border-bottom: 2px solid #30363d;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .jogador-header .header-dot {
+            width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .jogador-cartas { padding: 10px; }
+        .jogador-cartas select { margin-bottom: 6px; }
+        .jogador-info {
+            font-size: 0.75rem; color: #8b949e; text-align: center;
+            padding: 6px; background: #161b22;
+        }
+        .resultado-box {
+            background: linear-gradient(135deg, rgba(35,134,54,0.15), rgba(35,134,54,0.05));
+            border: 2px solid #238636; border-radius: 14px;
+            padding: 20px; text-align: center; margin-bottom: 12px;
+        }
+        .resultado-box h2 { color: #3fb950; font-size: 1.2rem; margin-bottom: 16px; }
+        .resultado-cards {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        }
+        .resultado-card {
+            background: #0d1117; padding: 14px 10px; border-radius: 10px;
+            border: 1px solid #30363d;
+        }
+        .resultado-card .label {
+            font-size: 0.65rem; color: #8b949e; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 6px;
+        }
+        .resultado-card .value {
+            font-size: 0.9rem; font-weight: 700; color: #3fb950;
+        }
+        .resultado-card .value.unknown { color: #484f58; }
+        .resultado-card .value.envelope {
+            background: linear-gradient(90deg, #ffd700, #ffaa00);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .progress-box {
+            background: #0d1117; border-radius: 10px; padding: 14px;
+            margin-bottom: 10px; border: 1px solid #30363d;
+        }
+        .progress-title { font-size: 0.85rem; font-weight: 700; color: #c9d1d9; margin-bottom: 10px; }
+        .progress-bar {
+            height: 8px; background: #21262d; border-radius: 4px; overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 4px; transition: width 0.5s ease;
+        }
+        .progress-fill.local { background: #58a6ff; }
+        .progress-fill.suspeito { background: #a371f7; }
+        .progress-fill.arma { background: #f0883e; }
+        .progress-labels {
+            display: flex; justify-content: space-between;
+            font-size: 0.7rem; color: #8b949e;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); display: none;
+            justify-content: center; align-items: flex-end;
+            z-index: 1000; backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #161b22; border-radius: 20px 20px 0 0;
+            padding: 24px 20px; width: 100%; max-width: 420px;
+            border: 1px solid #30363d; border-bottom: none;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal h3 { margin-bottom: 18px; color: #238636; text-align: center; font-size: 1.1rem; }
+        .modal-carta-info {
+            text-align: center; margin-bottom: 16px; padding: 10px;
+            background: #0d1117; border-radius: 8px; font-size: 0.9rem;
+        }
+        .modal-carta-info .carta-nome { font-weight: 700; color: #fff; font-size: 1.1rem; }
+        .modal-carta-info .carta-tipo { font-size: 0.75rem; color: #8b949e; margin-top: 4px; }
+        .cores-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            margin-bottom: 12px;
+        }
+        .cor-btn {
+            padding: 14px 4px; border: 2px solid transparent;
+            border-radius: 10px; cursor: pointer; font-weight: 700;
+            font-size: 0.75rem; text-align: center; transition: all 0.2s;
+        }
+        .cor-btn:hover { transform: scale(1.05); border-color: #fff; }
+        .btn-no {
+            width: 100%; padding: 12px; background: #21262d;
+            border: 1px solid #30363d; color: #8b949e;
+            border-radius: 10px; cursor: pointer; font-weight: 600;
+            margin-bottom: 10px; transition: all 0.2s;
+        }
+        .btn-no:hover { background: #30363d; color: #fff; }
+        .btn-cancelar {
+            width: 100%; padding: 12px; background: transparent;
+            border: 1px solid #30363d; color: #8b949e;
+            border-radius: 10px; cursor: pointer; font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-cancelar:hover { border-color: #238636; color: #238636; }
+        .estado-atual {
+            text-align: center; padding: 8px; margin-bottom: 12px;
+            background: #0d1117; border-radius: 8px; font-size: 0.8rem;
+        }
+        .estado-atual .atual-label { color: #8b949e; }
+        .estado-atual .atual-valor { font-weight: 700; color: #fff; }
+        @media (max-width: 600px) {
+            .setup-grid { grid-template-columns: 1fr; }
+            .palpite-grid { grid-template-columns: 1fr; }
+            .resultado-cards { grid-template-columns: 1fr; }
+            .cartas-grid.many { grid-template-columns: repeat(2, 1fr); }
+            .poss-table { font-size: 0.7rem; }
+            .poss-table td { padding: 6px 2px; min-width: 40px; }
+        }
+        @media (min-width: 768px) {
+            .jogadores-grid { grid-template-columns: repeat(2, 1fr); }
+            .palpite-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 MINDLOCK</h1>
+        <p class="subtitle">Assistente de Dedução Inteligente</p>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="setup">⚙️ Configurar</button>
+            <button class="tab-btn" data-tab="palpites">📝 Palpites</button>
+            <button class="tab-btn" data-tab="possibilidades">📊 Possibilidades</button>
+            <button class="tab-btn" data-tab="jogadores">👥 Jogadores</button>
+            <button class="tab-btn" data-tab="resultado">🏆 Resultado</button>
+        </div>
+        <div id="tab-setup" class="tab-content active">
+            <div class="card">
+                <div class="card-title">🎨 Qual cor é você?</div>
+                <div class="hint">Selecione a cor do SEU pino. Você será o primeiro jogador na ordem de turnos.</div>
+                <div class="setup-grid" id="setup-eu"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">👥 Quem mais está jogando?</div>
+                <div class="hint">Selecione as cores dos outros jogadores. Mínimo: 2 adversários (total 3 jogadores).</div>
+                <div class="setup-grid" id="setup-outros"></div>
+                <div class="contador-box">
+                    <div class="contador-jogadores" id="contador-jogadores">1 jogador selecionado</div>
+                    <div class="contador-cartas" id="contador-cartas">8 cartas para cada jogador</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">🎴 Suas Cartas</div>
+                <div class="hint">Selecione as <strong id="num-cartas-texto">8</strong> cartas que você recebeu na distribuição inicial. Cada carta só pode ser selecionada uma vez.</div>
+                <div class="cartas-grid" id="cartas-container"></div>
+                <button class="btn-iniciar" id="btn-iniciar" onclick="iniciarJogo()">🚀 INICIAR PARTIDA</button>
+            </div>
+        </div>
+        <div id="tab-palpites" class="tab-content">
+            <div class="card">
+                <div class="card-title">📜 Registrar Palpite</div>
+                <div class="hint">Preencha o palpite e clique no círculo colorido do jogador que mostrou uma carta. Se ninguém mostrou, clique em ✕.</div>
+                <div class="palpite-form">
+                    <div class="palpite-grid">
+                        <div><label>👤 Autor do Palpite</label><select id="novo-autor"></select></div>
+                        <div><label>🏢 Local</label><select id="novo-local"></select></div>
+                        <div><label>🕵️ Suspeito</label><select id="novo-suspeito"></select></div>
+                        <div><label>🔪 Arma</label><select id="novo-arma"></select></div>
+                    </div>
+                    <div class="mostrou-section">
+                        <div class="mostrou-label">Quem mostrou uma carta?</div>
+                        <div class="badges-row" id="botoes-jogadores"></div>
+                    </div>
+                    <button class="btn-add" onclick="registrarPalpite()">➕ Adicionar Palpite</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Histórico de Palpites</div>
+                <div id="historico-palpites"></div>
+            </div>
+        </div>
+        <div id="tab-possibilidades" class="tab-content">
+            <div class="deduction-box" id="deducao-box">
+                <span class="icon">🧠</span>
+                <div class="text" id="deducao-texto"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📊 Matriz de Eliminação</div>
+                <div class="hint">
+                    <strong>Legenda:</strong> 
+                    <span style="color:#8b949e">Cinza = Desconhecido</span> | 
+                    <span style="color:#484f58;text-decoration:line-through">Riscado = Não Possui</span> | 
+                    <span style="color:#238636">Rosa = Possível (vínculo de palpite)</span> | 
+                    <span style="color:#3fb950">Cor = Confirmado</span> | 
+                    <span style="color:#ffd700">⭐ = Envelope (solução)</span>
+                    <br><br>
+                    Toque em qualquer célula para marcar o dono da carta.
+                </div>
+                <div class="poss-table-wrapper">
+                    <table class="poss-table" id="poss-table">
+                        <thead><tr id="poss-header"></tr></thead>
+                        <tbody id="poss-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="tab-jogadores" class="tab-content">
+            <div class="card">
+                <div class="card-title">👥 Cartas por Jogador</div>
+                <div class="hint">Registre aqui as cartas confirmadas de cada jogador. As alterações são sincronizadas com a matriz de eliminação.</div>
+                <div class="jogadores-grid" id="jogadores-grid"></div>
+            </div>
+        </div>
+        <div id="tab-resultado" class="tab-content">
+            <div class="resultado-box">
+                <h2>🏆 SOLUÇÃO DO CRIME</h2>
+                <div class="resultado-cards">
+                    <div class="resultado-card">
+                        <div class="label">Local do Crime</div>
+                        <div class="value unknown" id="res-local">???</div>
+                    </div>
+                    <div class="resultado-card">
+                        <div class="label">Culpado</div>
+                        <div class="value unknown" id="res-suspeito">???</div>
+                    </div>
+                    <div class="resultado-card">
+                        <div class="label">Arma do Crime</div>
+                        <div class="value unknown" id="res-arma">???</div>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-box">
+                <div class="progress-title">📈 Progresso da Investigação</div>
+                <div class="progress-bar"><div class="progress-fill local" id="prog-local"></div></div>
+                <div class="progress-labels"><span>Locais</span><span id="prog-local-text">0/11 eliminados</span></div>
+                <div class="progress-bar"><div class="progress-fill suspeito" id="prog-suspeito"></div></div>
+                <div class="progress-labels"><span>Suspeitos</span><span id="prog-suspeito-text">0/8 eliminados</span></div>
+                <div class="progress-bar"><div class="progress-fill arma" id="prog-arma"></div></div>
+                <div class="progress-labels"><span>Armas</span><span id="prog-arma-text">0/8 eliminados</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-cores" onclick="if(event.target===this)fecharModal()">
+        <div class="modal">
+            <h3>Quem tem esta carta?</h3>
+            <div class="modal-carta-info">
+                <div class="carta-nome" id="modal-carta-nome"></div>
+                <div class="carta-tipo" id="modal-carta-tipo"></div>
+            </div>
+            <div class="estado-atual" id="modal-estado-atual"></div>
+            <div class="cores-grid" id="cores-grid"></div>
+            <button class="btn-no" onclick="marcarCelula('no')">✗ Ninguém tem (está no Envelope)</button>
+            <button class="btn-no" onclick="marcarCelula('possible')">❓ Marcar como Possível</button>
+            <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+<script>
+const JOGADORES = [
+    { id: 'amarelo', nome: 'AMARELO', cor: '#FFD700', text: '#000', personagem: 'SARGENTO' },
+    { id: 'azul', nome: 'AZUL', cor: '#0066CC', text: '#fff', personagem: 'MORDOMO' },
+    { id: 'branco', nome: 'BRANCO', cor: '#E8E8E8', text: '#000', personagem: 'FLORISTA' },
+    { id: 'marrom', nome: 'MARROM', cor: '#8B4513', text: '#fff', personagem: 'COZINHEIRO' },
+    { id: 'preto', nome: 'PRETO', cor: '#2D2D2D', text: '#fff', personagem: 'COVEIRO' },
+    { id: 'rosa', nome: 'ROSA', cor: '#FF1493', text: '#fff', personagem: 'MÉDICA' },
+    { id: 'verde', nome: 'VERDE', cor: '#228B22', text: '#fff', personagem: 'ADVOGADO' },
+    { id: 'vermelho', nome: 'VERMELHO', cor: '#DC143C', text: '#fff', personagem: 'DANÇARINA' }
+];
+const LOCAIS = ['BANCO','BOATE','CEMITÉRIO','ESTAÇÃO','FLORICULTURA','HOSPITAL','HOTEL','MANSÃO','PRAÇA','PREFEITURA','RESTAURANTE'];
+const SUSPEITOS = ['SARGENTO','MORDOMO','FLORISTA','COZINHEIRO','COVEIRO','MÉDICA','ADVOGADO','DANÇARINA'];
+const ARMAS = ['PÉ DE CABRA','ESPINGARDA','FACA','PÁ','ARMA QUÍMICA','SOCO INGLÊS','TESOURA','VENENO'];
+const TODAS_CARTAS = [...LOCAIS, ...SUSPEITOS, ...ARMAS];
+
+let estado = {
+    jogadoresAtivos: [],
+    eu: null,
+    matriz: {},
+    palpites: [],
+    iniciado: false,
+    cartasPorJogador: 8
+};
+let celulaModal = null;
+let mostrouSelecionado = null;
+
+function init() {
+    renderSetup();
+    setupTabs();
+    atualizarContadores();
+}
+
+function setupTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            btn.classList.add('active');
+            if (btn.dataset.tab === 'possibilidades') renderPossibilidades();
+            if (btn.dataset.tab === 'jogadores') renderJogadores();
+            if (btn.dataset.tab === 'resultado') renderResultado();
+        });
+    });
+}
+
+function renderSetup() {
+    const euContainer = document.getElementById('setup-eu');
+    euContainer.innerHTML = JOGADORES.map((j, i) => `
+        <div class="setup-item" id="item-eu-${j.id}" data-id="${j.id}" onclick="selecionarEu('${j.id}')">
+            <div class="dot" style="background:${j.cor}"></div>
+            <span class="setup-label">${j.nome} (${j.personagem})</span>
+        </div>
+    `).join('');
+
+    const outrosContainer = document.getElementById('setup-outros');
+    outrosContainer.innerHTML = JOGADORES.map((j, i) => `
+        <div class="setup-item" id="item-outro-${j.id}" data-id="${j.id}" onclick="toggleOutro('${j.id}')">
+            <div class="dot" style="background:${j.cor}"></div>
+            <span class="setup-label">${j.nome} (${j.personagem})</span>
+        </div>
+    `).join('');
+
+    // Inicializa: AMARELO como "eu" por padrão
+    estado.euId = 'amarelo';
+    estado.outrosSelecionados = ['azul', 'branco']; // padrão inicial
+
+    JOGADORES.forEach(j => {
+        updateEuStyle(j.id);
+        updateOutroStyle(j.id);
+    });
+
+    // Desabilita o "eu" na lista de outros
+    const euItem = document.getElementById('item-outro-' + estado.euId);
+    if (euItem) {
+        euItem.classList.add('disabled');
+        euItem.classList.remove('selected');
+    }
+
+    atualizarContadores();
+}
+
+function selecionarEu(id) {
+    estado.euId = id;
+    JOGADORES.forEach(j => updateEuStyle(j.id));
+    JOGADORES.forEach(j => {
+        const outroItem = document.getElementById('item-outro-' + j.id);
+        if (!outroItem) return;
+        if (j.id === id) {
+            // Desabilita na lista de "outros"
+            outroItem.classList.add('disabled');
+            outroItem.classList.remove('selected');
+            // Remove dos selecionados se estiver lá
+            const idx = estado.outrosSelecionados.indexOf(j.id);
+            if (idx > -1) estado.outrosSelecionados.splice(idx, 1);
+        } else {
+            // Reabilita na lista de "outros"
+            outroItem.classList.remove('disabled');
+            updateOutroStyle(j.id);
+        }
+    });
+    atualizarContadores();
+}
+
+function toggleOutro(id) {
+    const item = document.getElementById('item-outro-' + id);
+    if (item.classList.contains('disabled')) return;
+
+    const idx = estado.outrosSelecionados.indexOf(id);
+    if (idx > -1) {
+        estado.outrosSelecionados.splice(idx, 1);
+    } else {
+        estado.outrosSelecionados.push(id);
+    }
+    updateOutroStyle(id);
+    atualizarContadores();
+}
+
+function updateEuStyle(id) {
+    const item = document.getElementById('item-eu-' + id);
+    if (!item) return;
+    item.classList.toggle('selected', estado.euId === id);
+}
+
+function updateOutroStyle(id) {
+    const item = document.getElementById('item-outro-' + id);
+    if (!item) return;
+    item.classList.toggle('selected', estado.outrosSelecionados.includes(id));
+}
+
+function atualizarContadores() {
+    const euId = estado.euId;
+    const numOutros = estado.outrosSelecionados.length;
+    const numTotal = euId ? 1 + numOutros : numOutros;
+    let cartasPorJogador = 0, sobra = 0;
+    if (numTotal > 0) {
+        cartasPorJogador = Math.floor(24 / numTotal);
+        sobra = 24 % numTotal;
+    }
+    const textoJogadores = numTotal === 1 ? '1 jogador' : `${numTotal} jogadores`;
+    const textoOutros = numOutros === 1 ? '1 outro' : `${numOutros} outros`;
+    document.getElementById('contador-jogadores').textContent = `${textoJogadores} (você + ${textoOutros})`;
+    const textoCartas = sobra > 0
+        ? `${cartasPorJogador} a ${cartasPorJogador + 1} cartas (${sobra} jogador${sobra !== 1 ? 'es' : ''} com ${cartasPorJogador + 1})`
+        : `${cartasPorJogador} cartas para cada jogador`;
+    document.getElementById('contador-cartas').textContent = textoCartas;
+    document.getElementById('num-cartas-texto').textContent = cartasPorJogador;
+    estado.cartasPorJogador = cartasPorJogador;
+    renderCartasInputs();
+}
+
+function renderCartasInputs() {
+    const container = document.getElementById('cartas-container');
+    const numCartas = estado.cartasPorJogador || 8;
+    container.className = 'cartas-grid' + (numCartas > 6 ? ' many' : '');
+    let html = '';
+    for (let i = 1; i <= numCartas; i++) {
+        html += `<select id="minha-carta-${i}" onchange="atualizarCartasDisponiveis()"><option value="">- Selecione -</option></select>`;
+    }
+    container.innerHTML = html;
+    atualizarCartasDisponiveis();
+}
+
+function atualizarCartasDisponiveis() {
+    const numCartas = estado.cartasPorJogador || 8;
+    const locaisOrd = [...LOCAIS].sort();
+    const suspeitosOrd = [...SUSPEITOS].sort();
+    const armasOrd = [...ARMAS].sort();
+    const selecionadas = [];
+    for (let i = 1; i <= numCartas; i++) {
+        const val = document.getElementById('minha-carta-' + i)?.value;
+        if (val) selecionadas.push(val);
+    }
+    for (let i = 1; i <= numCartas; i++) {
+        const select = document.getElementById('minha-carta-' + i);
+        if (!select) continue;
+        const valorAtual = select.value;
+        let opts = '<option value="">- Selecione -</option>';
+        opts += '<optgroup label="🏢 LOCAIS">';
+        locaisOrd.forEach(carta => {
+            const jaSelecionada = selecionadas.includes(carta);
+            const ehEsta = carta === valorAtual;
+            if (!jaSelecionada || ehEsta) opts += `<option value="${carta}" ${carta === valorAtual ? 'selected' : ''}>${carta}</option>`;
+        });
+        opts += '</optgroup>';
+        opts += '<optgroup label="👤 SUSPEITOS">';
+        suspeitosOrd.forEach(carta => {
+            const jaSelecionada = selecionadas.includes(carta);
+            const ehEsta = carta === valorAtual;
+            if (!jaSelecionada || ehEsta) opts += `<option value="${carta}" ${carta === valorAtual ? 'selected' : ''}>${carta}</option>`;
+        });
+        opts += '</optgroup>';
+        opts += '<optgroup label="🔪 ARMAS">';
+        armasOrd.forEach(carta => {
+            const jaSelecionada = selecionadas.includes(carta);
+            const ehEsta = carta === valorAtual;
+            if (!jaSelecionada || ehEsta) opts += `<option value="${carta}" ${carta === valorAtual ? 'selected' : ''}>${carta}</option>`;
+        });
+        opts += '</optgroup>';
+        select.innerHTML = opts;
+    }
+}
+
+function iniciarJogo() {
+    const euId = estado.euId;
+    if (!euId) { alert('Selecione a sua cor primeiro!'); return; }
+    const euJogador = JOGADORES.find(j => j.id === euId);
+    const numOutros = estado.outrosSelecionados.length;
+    const numTotal = 1 + numOutros;
+    if (numTotal < 3) {
+        alert('Selecione pelo menos 2 outros jogadores! Total mínimo: 3 jogadores.');
+        return;
+    }
+    const outrosJogadores = estado.outrosSelecionados.map(id => JOGADORES.find(j => j.id === id));
+    estado.jogadoresAtivos = [euJogador, ...outrosJogadores];
+    estado.eu = euJogador;
+    estado.iniciado = true;
+    estado.palpites = [];
+    estado.matriz = {};
+    TODAS_CARTAS.forEach(carta => {
+        estado.matriz[carta] = {};
+        estado.jogadoresAtivos.forEach(j => { estado.matriz[carta][j.id] = null; });
+    });
+    for (let i = 1; i <= estado.cartasPorJogador; i++) {
+        const carta = document.getElementById('minha-carta-' + i)?.value;
+        if (carta) marcarConfirmado(carta, estado.eu.id);
+    }
+    const jogadoresOrd = [...estado.jogadoresAtivos].sort((a,b) => a.nome.localeCompare(b.nome));
+    const jogadoresOpts = jogadoresOrd.map(j =>
+        `<option value="${j.id}">${j.nome}</option>`
+    ).join('');
+    document.getElementById('novo-autor').innerHTML = jogadoresOpts;
+    const suspeitosOrd = [...SUSPEITOS].sort((a,b) => a.localeCompare(b));
+    const suspeitosOpts = suspeitosOrd.map(s => {
+        const jogador = JOGADORES.find(j => j.personagem === s);
+        const cor = jogador ? jogador.nome : '';
+        return `<option value="${s}">${s} (${cor})</option>`;
+    }).join('');
+    document.getElementById('novo-suspeito').innerHTML = suspeitosOpts;
+    const locaisOrd = [...LOCAIS].sort((a,b) => a.localeCompare(b));
+    document.getElementById('novo-local').innerHTML = locaisOrd.map(l => `<option value="${l}">${l}</option>`).join('');
+    const armasOrd = [...ARMAS].sort((a,b) => a.localeCompare(b));
+    document.getElementById('novo-arma').innerHTML = armasOrd.map(a => `<option value="${a}">${a}</option>`).join('');
+    renderBotoesJogadores();
+    renderPossibilidades();
+    renderJogadores();
+    renderResultado();
+    document.querySelectorAll('.tab-btn')[1].click();
+}
+
+function renderBotoesJogadores() {
+    const container = document.getElementById('botoes-jogadores');
+    container.innerHTML = `
+        <div class="jogador-badge btn-passou" onclick="selecionarMostrou(null)" id="btn-passou" title="Ninguém mostrou">✕<span class="badge-name">Passou</span></div>
+        ${estado.jogadoresAtivos.map(j => `
+            <div class="jogador-badge" style="background:${j.cor};color:${j.text}" onclick="selecionarMostrou('${j.id}')" id="btn-${j.id}" title="${j.nome}">
+                ${j.nome[0]}<span class="badge-name">${j.nome}</span>
+            </div>
+        `).join('')}
+    `;
+}
+
+function selecionarMostrou(jogadorId) {
+    mostrouSelecionado = jogadorId;
+    document.querySelectorAll('.jogador-badge').forEach(b => b.classList.remove('selected'));
+    if (jogadorId) document.getElementById('btn-' + jogadorId).classList.add('selected');
+    else document.getElementById('btn-passou').classList.add('selected');
+}
+
+function registrarPalpite() {
+    const autorId = document.getElementById('novo-autor').value;
+    const local = document.getElementById('novo-local').value;
+    const suspeito = document.getElementById('novo-suspeito').value;
+    const arma = document.getElementById('novo-arma').value;
+    if (!autorId || !local || !suspeito || !arma) {
+        alert('Preencha todos os campos do palpite!'); return;
+    }
+    const autor = JOGADORES.find(j => j.id === autorId);
+    const palpite = {
+        num: estado.palpites.length + 1,
+        autorId, autorNome: autor.nome, autorCor: autor.cor,
+        mostrou: mostrouSelecionado,
+        mostrouNome: mostrouSelecionado ? JOGADORES.find(j => j.id === mostrouSelecionado).nome : null,
+        mostrouCor: mostrouSelecionado ? JOGADORES.find(j => j.id === mostrouSelecionado).cor : null,
+        local, suspeito, arma
+    };
+    estado.palpites.push(palpite);
+    if (mostrouSelecionado) {
+        [local, suspeito, arma].forEach(carta => {
+            if (estado.matriz[carta][mostrouSelecionado] === null) {
+                estado.matriz[carta][mostrouSelecionado] = 'possible';
+            }
+        });
+    } else {
+        estado.jogadoresAtivos.forEach(j => {
+            [local, suspeito, arma].forEach(carta => {
+                if (estado.matriz[carta][j.id] === null || estado.matriz[carta][j.id] === 'possible') {
+                    estado.matriz[carta][j.id] = 'no';
+                }
+            });
+        });
+    }
+    const deducoes = rodarDeducoes();
+    renderHistorico();
+    renderPossibilidades();
+    renderJogadores();
+    renderResultado();
+    if (deducoes.length > 0) {
+        const box = document.getElementById('deducao-box');
+        document.getElementById('deducao-texto').innerHTML = deducoes.join('<br>');
+        box.classList.add('active');
+        setTimeout(() => box.classList.remove('active'), 10000);
+    }
+    mostrouSelecionado = null;
+    document.querySelectorAll('.jogador-badge').forEach(b => b.classList.remove('selected'));
+}
+
+function renderHistorico() {
+    const container = document.getElementById('historico-palpites');
+    if (estado.palpites.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#8b949e;padding:30px 20px;">Nenhum palpite registrado ainda.<br><span style="font-size:0.75rem;">Os palpites aparecerão aqui quando você os adicionar.</span></div>';
+        return;
+    }
+
+    // Função auxiliar para obter classe CSS do dono de uma carta
+    function getDonoClasse(carta) {
+        const dono = getDono(carta);
+        if (dono === 'envelope') return 'no-envelope';
+        if (dono) return 'tem-dono dono-' + dono;
+        return '';
+    }
+
+    // Função auxiliar para obter label do dono
+    function getDonoLabel(carta) {
+        const dono = getDono(carta);
+        if (dono === 'envelope') return '<span class="dono-label">📩 envelope</span>';
+        if (dono) {
+            const j = JOGADORES.find(x => x.id === dono);
+            return j ? `<span class="dono-label" style="color:${j.cor}">● ${j.nome}</span>` : '';
+        }
+        return '';
+    }
+
+    container.innerHTML = estado.palpites.slice().reverse().map(p => {
+        const borderColor = p.mostrouCor || '#484f58';
+        const mostrouTexto = p.mostrouNome
+            ? `<span class="historico-mostrou" style="background:${p.mostrouCor}22;color:${p.mostrouCor};border:1px solid ${p.mostrouCor}44;">👁 ${p.mostrouNome}</span>`
+            : '<span class="historico-mostrou passou">❌ Ninguém mostrou</span>';
+
+        const localDono = getDonoClasse(p.local);
+        const suspeitoDono = getDonoClasse(p.suspeito);
+        const armaDono = getDonoClasse(p.arma);
+
+        const localLabel = getDonoLabel(p.local);
+        const suspeitoLabel = getDonoLabel(p.suspeito);
+        const armaLabel = getDonoLabel(p.arma);
+
+        return `
+            <div class="historico-item" style="border-left-color:${borderColor}">
+                <div class="historico-header">
+                    <span class="historico-num">#${p.num}</span>
+                    ${mostrouTexto}
+                </div>
+                <div class="historico-body">
+                    <strong style="color:${p.autorCor}">${p.autorNome}</strong> palpitou:
+                </div>
+                <div class="historico-cartas">
+                    <span class="carta-tag local ${localDono}">🏢 ${p.local}${localLabel}</span>
+                    <span class="carta-tag suspeito ${suspeitoDono}">🕵️ ${p.suspeito}${suspeitoLabel}</span>
+                    <span class="carta-tag arma ${armaDono}">🔪 ${p.arma}${armaLabel}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderPossibilidades() {
+    if (!estado.iniciado) return;
+    const thead = document.getElementById('poss-header');
+    thead.innerHTML = '<th>CARTA</th>' + estado.jogadoresAtivos.map(j =>
+        `<th style="background:${j.cor};color:${j.text}">${j.nome}</th>`
+    ).join('') + '<th>ENVELOPE</th>';
+    const tbody = document.getElementById('poss-body');
+    let html = '';
+    const secoes = [
+        { nome: '🏢 LOCAIS', cartas: LOCAIS },
+        { nome: '🕵️ SUSPEITOS', cartas: SUSPEITOS },
+        { nome: '🔪 ARMAS', cartas: ARMAS }
+    ];
+    secoes.forEach(secao => {
+        html += `<tr><td colspan="${estado.jogadoresAtivos.length + 2}" class="section-header">${secao.nome}</td></tr>`;
+        secao.cartas.forEach(carta => {
+            html += '<tr>';
+            html += `<td>${carta}</td>`;
+            const dono = getDono(carta);
+            const isEnvelope = (dono === 'envelope');
+            estado.jogadoresAtivos.forEach(j => {
+                const cellState = estado.matriz[carta][j.id];
+                let cellClass = 'cell-unknown';
+                let cellText = '?';
+                if (cellState === 'no') { cellClass = 'cell-no'; cellText = '✗'; }
+                else if (cellState === 'possible') { cellClass = 'cell-possible'; cellText = '?'; }
+                else if (cellState === j.id) { cellClass = 'cell-confirmed jogador-' + j.id; cellText = '✓'; }
+                html += `<td class="${cellClass}" onclick="abrirModal('${carta}')">${cellText}</td>`;
+            });
+            if (isEnvelope) {
+                html += `<td class="cell-envelope" onclick="abrirModal('${carta}')">⭐</td>`;
+            } else {
+                const todosNo = estado.jogadoresAtivos.every(j => estado.matriz[carta][j.id] === 'no');
+                html += `<td class="${todosNo ? 'cell-no' : 'cell-unknown'}" onclick="abrirModal('${carta}')">${todosNo ? '✗' : '?'}</td>`;
+            }
+            html += '</tr>';
+        });
+    });
+    tbody.innerHTML = html;
+}
+
+function getDono(carta) {
+    for (let j of estado.jogadoresAtivos) {
+        if (estado.matriz[carta][j.id] === j.id) return j.id;
+    }
+    const todosNo = estado.jogadoresAtivos.every(j => estado.matriz[carta][j.id] === 'no');
+    if (todosNo) return 'envelope';
+    return null;
+}
+
+function abrirModal(carta) {
+    celulaModal = carta;
+    const grid = document.getElementById('cores-grid');
+    const donoAtual = getDono(carta);
+    document.getElementById('modal-carta-nome').textContent = carta;
+    let tipo = 'Local';
+    if (SUSPEITOS.includes(carta)) tipo = 'Suspeito';
+    else if (ARMAS.includes(carta)) tipo = 'Arma';
+    document.getElementById('modal-carta-tipo').textContent = tipo;
+    const estadoAtual = document.getElementById('modal-estado-atual');
+    if (donoAtual === 'envelope') {
+        estadoAtual.innerHTML = '<span class="atual-label">Estado atual:</span> <span class="atual-valor" style="color:#ffd700">⭐ No Envelope (Solução)</span>';
+    } else if (donoAtual) {
+        const j = JOGADORES.find(x => x.id === donoAtual);
+        estadoAtual.innerHTML = `<span class="atual-label">Estado atual:</span> <span class="atual-valor" style="color:${j.cor}">✓ Confirmado: ${j.nome}</span>`;
+    } else {
+        const possiveis = estado.jogadoresAtivos.filter(j => estado.matriz[carta][j.id] !== 'no').map(j => j.nome).join(', ');
+        estadoAtual.innerHTML = `<span class="atual-label">Possíveis donos:</span> <span class="atual-valor">${possiveis || 'Nenhum (Envelope)'}</span>`;
+    }
+    grid.innerHTML = estado.jogadoresAtivos.map(j => {
+        const isDono = estado.matriz[carta][j.id] === j.id;
+        const border = isDono ? '3px solid #fff' : '2px solid transparent';
+        return `<button class="cor-btn" style="background:${j.cor};color:${j.text};border:${border};" onclick="marcarCelula('${j.id}')">${isDono ? '✓ ' : ''}${j.nome}</button>`;
+    }).join('');
+    document.getElementById('modal-cores').classList.add('active');
+}
+
+function marcarCelula(valor) {
+    if (!celulaModal) return;
+    const carta = celulaModal;
+    if (valor === 'no') {
+        estado.jogadoresAtivos.forEach(j => { estado.matriz[carta][j.id] = 'no'; });
+    } else if (valor === 'possible') {
+        estado.jogadoresAtivos.forEach(j => {
+            if (estado.matriz[carta][j.id] === null) estado.matriz[carta][j.id] = 'possible';
+        });
+    } else {
+        marcarConfirmado(carta, valor);
+    }
+    rodarDeducoes();
+    fecharModal();
+    renderPossibilidades();
+    renderJogadores();
+    renderResultado();
+}
+
+function marcarConfirmado(carta, jogadorId) {
+    estado.matriz[carta][jogadorId] = jogadorId;
+    estado.jogadoresAtivos.forEach(j => {
+        if (j.id !== jogadorId) estado.matriz[carta][j.id] = 'no';
+    });
+}
+
+function fecharModal() {
+    document.getElementById('modal-cores').classList.remove('active');
+    celulaModal = null;
+}
+
+function renderJogadores() {
+    if (!estado.iniciado) return;
+    const grid = document.getElementById('jogadores-grid');
+    grid.innerHTML = estado.jogadoresAtivos.map(j => {
+        const cartasConfirmadas = TODAS_CARTAS.filter(carta => estado.matriz[carta][j.id] === j.id);
+        const numCartas = estado.cartasPorJogador;
+        const isEu = j.id === estado.eu.id;
+        const selects = [];
+        for (let i = 0; i < numCartas; i++) {
+            const cartaAtual = cartasConfirmadas[i] || '';
+            selects.push(`
+                <select onchange="atualizarCartaJogador('${j.id}', this.value, ${i})">
+                    <option value="">- Vazia -</option>
+                    ${TODAS_CARTAS.map(c => {
+                        const dono = getDono(c);
+                        const disabled = (dono && dono !== 'envelope' && dono !== j.id) ? 'disabled' : '';
+                        return `<option value="${c}" ${c === cartaAtual ? 'selected' : ''} ${disabled}>${c}</option>`;
+                    }).join('')}
+                </select>
+            `);
+        }
+        return `
+            <div class="jogador-bloco">
+                <div class="jogador-header" style="background:${j.cor};color:${j.text}">
+                    <div class="header-dot" style="background:${j.cor};border-color:${j.text}"></div>
+                    ${j.nome} (${j.personagem}) ${isEu ? '- VOCÊ' : ''}
+                </div>
+                <div class="jogador-info">Cartas confirmadas: ${cartasConfirmadas.length}/${numCartas}</div>
+                <div class="jogador-cartas">${selects.join('')}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function atualizarCartaJogador(jogadorId, carta, index) {
+    if (!carta) return;
+    marcarConfirmado(carta, jogadorId);
+    rodarDeducoes();
+    renderPossibilidades();
+    renderJogadores();
+    renderResultado();
+}
+
+function rodarDeducoes() {
+    let mudou = true;
+    let iteracoes = 0;
+    const deducoes = [];
+    while (mudou && iteracoes < 30) {
+        mudou = false;
+        iteracoes++;
+
+        // REGRA 1: Palpite com 2 "no" para quem mostrou -> 3a e confirmada
+        estado.palpites.forEach(p => {
+            if (!p.mostrou) return;
+            const cartas = [p.local, p.suspeito, p.arma];
+            const mostrouId = p.mostrou;
+            const noCount = cartas.filter(c => estado.matriz[c][mostrouId] === 'no').length;
+            const confirmedCount = cartas.filter(c => estado.matriz[c][mostrouId] === mostrouId).length;
+            const desconhecidas = cartas.filter(c => {
+                const val = estado.matriz[c][mostrouId];
+                return val !== 'no' && val !== mostrouId;
+            });
+            if (noCount === 2 && confirmedCount === 0 && desconhecidas.length === 1) {
+                const carta = desconhecidas[0];
+                marcarConfirmado(carta, mostrouId);
+                mudou = true;
+                const jogador = JOGADORES.find(j => j.id === mostrouId);
+                deducoes.push(`<strong>${jogador.nome}</strong> tem "${carta}" (deduzido do palpite #${p.num})`);
+            }
+        });
+
+        // REGRA 2: Se so falta 1 jogador sem "no", ele tem a carta
+        TODAS_CARTAS.forEach(carta => {
+            const jogadoresSemNo = estado.jogadoresAtivos.filter(j => estado.matriz[carta][j.id] !== 'no');
+            const confirmado = estado.jogadoresAtivos.find(j => estado.matriz[carta][j.id] === j.id);
+            if (!confirmado && jogadoresSemNo.length === 1) {
+                const j = jogadoresSemNo[0];
+                marcarConfirmado(carta, j.id);
+                mudou = true;
+                deducoes.push(`<strong>${j.nome}</strong> tem "${carta}" (unica opcao restante)`);
+            }
+        });
+
+        // REGRA 3: Se um jogador ja tem o maximo de cartas confirmadas,
+        // todas as outras cartas sao "no" para ele
+        estado.jogadoresAtivos.forEach(j => {
+            const cartasConfirmadas = TODAS_CARTAS.filter(c => estado.matriz[c][j.id] === j.id);
+            if (cartasConfirmadas.length >= estado.cartasPorJogador) {
+                TODAS_CARTAS.forEach(carta => {
+                    if (estado.matriz[carta][j.id] === null || estado.matriz[carta][j.id] === 'possible') {
+                        estado.matriz[carta][j.id] = 'no';
+                        mudou = true;
+                    }
+                });
+                if (cartasConfirmadas.length === estado.cartasPorJogador) {
+                    deducoes.push(`<strong>${j.nome}</strong> ja tem ${cartasConfirmadas.length} cartas — todas as outras sao eliminadas`);
+                }
+            }
+        });
+
+        // REGRA 4: Se uma carta esta confirmada para um jogador em um palpite,
+        // e ele mostrou em outro palpite com essa carta, as outras 2 do palpite sao "no" para ele
+        estado.palpites.forEach(p => {
+            if (!p.mostrou) return;
+            const cartas = [p.local, p.suspeito, p.arma];
+            const mostrouId = p.mostrou;
+            const confirmadasNoPalpite = cartas.filter(c => estado.matriz[c][mostrouId] === mostrouId);
+            if (confirmadasNoPalpite.length >= 1) {
+                cartas.forEach(carta => {
+                    if (estado.matriz[carta][mostrouId] !== mostrouId &&
+                        (estado.matriz[carta][mostrouId] === null || estado.matriz[carta][mostrouId] === 'possible')) {
+                        estado.matriz[carta][mostrouId] = 'no';
+                        mudou = true;
+                    }
+                });
+            }
+        });
+    }
+    return deducoes;
+}
+
+function renderResultado() {
+    if (!estado.iniciado) return;
+    const envelope = TODAS_CARTAS.filter(carta => estado.jogadoresAtivos.every(j => estado.matriz[carta][j.id] === 'no'));
+    const resLocal = envelope.find(c => LOCAIS.includes(c)) || '???';
+    const resSuspeito = envelope.find(c => SUSPEITOS.includes(c)) || '???';
+    const resArma = envelope.find(c => ARMAS.includes(c)) || '???';
+
+    const elLocal = document.getElementById('res-local');
+    elLocal.textContent = resLocal;
+    elLocal.className = 'value ' + (resLocal === '???' ? 'unknown' : 'envelope');
+
+    const elSuspeito = document.getElementById('res-suspeito');
+    elSuspeito.textContent = resSuspeito;
+    elSuspeito.className = 'value ' + (resSuspeito === '???' ? 'unknown' : 'envelope');
+
+    const elArma = document.getElementById('res-arma');
+    elArma.textContent = resArma;
+    elArma.className = 'value ' + (resArma === '???' ? 'unknown' : 'envelope');
+
+    // Progresso
+    const locaisEliminados = LOCAIS.filter(c => estado.jogadoresAtivos.some(j => estado.matriz[c][j.id] === j.id)).length;
+    const suspeitosEliminados = SUSPEITOS.filter(c => estado.jogadoresAtivos.some(j => estado.matriz[c][j.id] === j.id)).length;
+    const armasEliminadas = ARMAS.filter(c => estado.jogadoresAtivos.some(j => estado.matriz[c][j.id] === j.id)).length;
+
+    document.getElementById('prog-local').style.width = (locaisEliminados / LOCAIS.length * 100) + '%';
+    document.getElementById('prog-local-text').textContent = `${locaisEliminados}/${LOCAIS.length} eliminados`;
+    document.getElementById('prog-suspeito').style.width = (suspeitosEliminados / SUSPEITOS.length * 100) + '%';
+    document.getElementById('prog-suspeito-text').textContent = `${suspeitosEliminados}/${SUSPEITOS.length} eliminados`;
+    document.getElementById('prog-arma').style.width = (armasEliminadas / ARMAS.length * 100) + '%';
+    document.getElementById('prog-arma-text').textContent = `${armasEliminadas}/${ARMAS.length} eliminadas`;
+}
+
+init();
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW falhou:', err));
+    });
+}
+</script>
+</body>
+</html>
