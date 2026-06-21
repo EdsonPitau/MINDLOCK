@@ -1,0 +1,22 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.edsonpitau.twa",
+      "sha256_cert_fingerprints": [
+        "D9:56:DB:C9:63:50:86:5D:19:30:00:87:A9:AA:CA:44:7F:77:0F:EE:63:7F:AD:A2:98:BD:A1:5C:51:20:EE:2E"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.edsonpitau.mindlock.twa",
+      "sha256_cert_fingerprints": [
+        "2C:40:E4:2E:D7:2F:FF:83:4B:DC:5B:44:8A:9B:64:EF:EC:1C:83:A0:35:14:0A:5F:6F:B4:33:97:AF:99:77:19"
+      ]
+    }
+  }
+]
