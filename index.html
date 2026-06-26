@@ -221,7 +221,7 @@
             background: #21262d !important; color: #484f58;
             text-decoration: line-through; font-size: 0.7rem;
         }
-        .cell-possible { background: rgba(35,134,54,0.15) !important; color: #238636; }
+        .cell-possible { background: rgba(210,105,0,0.18) !important; color: #e8a030; font-weight: 600; }
         .cell-confirmed {
             font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
@@ -459,10 +459,10 @@
                 <div class="card-title">📊 Matriz de Eliminação</div>
                 <div class="hint">
                     <strong>Legenda:</strong> 
-                    <span style="color:#8b949e">Cinza = Desconhecido</span> | 
-                    <span style="color:#484f58;text-decoration:line-through">Riscado = Não Possui</span> | 
-                    <span style="color:#238636">Rosa = Possível (vínculo de palpite)</span> | 
-                    <span style="color:#3fb950">Cor = Confirmado</span> | 
+                    <span style="color:#8b949e">? Cinza = Desconhecido</span> | 
+                    <span style="color:#484f58;text-decoration:line-through">✗ Riscado = Não Possui</span> | 
+                    <span style="color:#e8a030">~ Laranja = Candidato de palpite (possui <em>uma</em> das 3 cartas desse palpite, ainda não sabemos qual)</span> | 
+                    <span style="color:#3fb950">✓ Cor = Confirmado</span> | 
                     <span style="color:#ffd700">⭐ = Envelope (solução)</span>
                     <br><br>
                     Toque em qualquer célula para marcar o dono da carta.
@@ -926,10 +926,20 @@ function renderPossibilidades() {
                 const cellState = estado.matriz[carta][j.id];
                 let cellClass = 'cell-unknown';
                 let cellText = '?';
+                let cellTitle = '';
                 if (cellState === 'no') { cellClass = 'cell-no'; cellText = '✗'; }
-                else if (cellState === 'possible') { cellClass = 'cell-possible'; cellText = '?'; }
+                else if (cellState === 'possible') {
+                    // Find which guesses link this card to this player
+                    const palpitesVinculados = estado.palpites.filter(p =>
+                        p.mostrou === j.id && [p.local, p.suspeito, p.arma].includes(carta)
+                    );
+                    const nums = palpitesVinculados.map(p => '#' + p.num).join(', ');
+                    cellClass = 'cell-possible';
+                    cellText = '~';
+                    cellTitle = `Candidato de palpite ${nums}: ${j.nome} mostrou 1 de 3 cartas (não confirmado)`;
+                }
                 else if (cellState === j.id) { cellClass = 'cell-confirmed jogador-' + j.id; cellText = '✓'; }
-                html += `<td class="${cellClass}" onclick="abrirModal('${carta}')">${cellText}</td>`;
+                html += `<td class="${cellClass}" onclick="abrirModal('${carta}')" title="${cellTitle}">${cellText}</td>`;
             });
             if (isEnvelope) {
                 html += `<td class="cell-envelope" onclick="abrirModal('${carta}')">⭐</td>`;
