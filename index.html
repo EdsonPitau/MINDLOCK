@@ -820,7 +820,9 @@ function registrarPalpite() {
             }
         });
     } else {
-        estado.jogadoresAtivos.forEach(j => {
+        // Ninguém mostrou: só os jogadores QUE NÃO SÃO O AUTOR não têm essas cartas.
+        // O autor pode ter alguma delas na mão — não devemos marcar como "no" para ele.
+        estado.jogadoresAtivos.filter(j => j.id !== autorId).forEach(j => {
             [local, suspeito, arma].forEach(carta => {
                 if (estado.matriz[carta][j.id] === null || estado.matriz[carta][j.id] === 'possible') {
                     estado.matriz[carta][j.id] = 'no';
@@ -1091,23 +1093,36 @@ function rodarDeducoes() {
             }
         });
 
-        // REGRA 2: Se so falta 1 jogador sem "no", ele tem a carta
+        // REGRA 2: Se só falta 1 jogador sem "no", E o envelope dessa categoria já foi identificado, ele tem a carta.
+        // IMPORTANTE: sem verificar o envelope, poderíamos confirmar uma carta para um jogador
+        // quando ela é na verdade a carta do envelope (a solução).
         TODAS_CARTAS.forEach(carta => {
             const jogadoresSemNo = estado.jogadoresAtivos.filter(j => estado.matriz[carta][j.id] !== 'no');
             const confirmado = estado.jogadoresAtivos.find(j => estado.matriz[carta][j.id] === j.id);
             if (!confirmado && jogadoresSemNo.length === 1) {
-                const j = jogadoresSemNo[0];
-                marcarConfirmado(carta, j.id);
-                mudou = true;
-                deducoes.push(`<strong>${j.nome}</strong> tem "${carta}" (unica opcao restante)`);
+                // Só podemos confirmar se o envelope dessa categoria já foi identificado
+                // (ou seja, já existe OUTRA carta da mesma categoria com todos os jogadores = 'no')
+                const categoria = LOCAIS.includes(carta) ? LOCAIS : SUSPEITOS.includes(carta) ? SUSPEITOS : ARMAS;
+                const envelopeJaIdentificado = categoria.some(c =>
+                    c !== carta && estado.jogadoresAtivos.every(j => estado.matriz[c][j.id] === 'no')
+                );
+                if (envelopeJaIdentificado) {
+                    const j = jogadoresSemNo[0];
+                    marcarConfirmado(carta, j.id);
+                    mudou = true;
+                    deducoes.push(`<strong>${j.nome}</strong> tem "${carta}" (única opção restante — envelope já identificado)`);
+                }
             }
         });
 
-        // REGRA 3: Se um jogador ja tem o maximo de cartas confirmadas,
-        // todas as outras cartas sao "no" para ele
+        // REGRA 3: Se um jogador já tem o máximo de cartas confirmadas,
+        // todas as outras cartas são "no" para ele.
+        // Usa Math.ceil para não disparar cedo demais quando a distribuição é desigual
+        // (ex: 5 jogadores → alguns têm 4, outros têm 5 cartas).
+        const maxCartasPossivel = Math.ceil(24 / estado.jogadoresAtivos.length);
         estado.jogadoresAtivos.forEach(j => {
             const cartasConfirmadas = TODAS_CARTAS.filter(c => estado.matriz[c][j.id] === j.id);
-            if (cartasConfirmadas.length >= estado.cartasPorJogador) {
+            if (cartasConfirmadas.length >= maxCartasPossivel) {
                 TODAS_CARTAS.forEach(carta => {
                     if (estado.matriz[carta][j.id] === null || estado.matriz[carta][j.id] === 'possible') {
                         estado.matriz[carta][j.id] = 'no';
